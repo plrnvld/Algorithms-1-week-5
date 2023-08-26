@@ -5,7 +5,8 @@ import edu.princeton.cs.algs4.RectHV;
 import edu.princeton.cs.algs4.SET;
 
 public class KdTree {
-    private SET<Point2D> set;
+    private KdTreeNode root;
+    private int size;
 
     private class KdTreeNode {
         Point2D value;
@@ -20,37 +21,62 @@ public class KdTree {
     }
 
     public KdTree() { // construct an empty set of points
-        set = new SET<Point2D>();
+        root = null;
+        size = 0;
     }
 
     public boolean isEmpty() {
-        return set.isEmpty();
+        return root == null;
     }
 
     public int size() { // number of points in the set
-        return set.size();
+        return size;
     }
 
     public void insert(Point2D p) { // add the point to the set (if it is not already in the set)
         if (p == null)
             throw new IllegalArgumentException();
 
-        var node = new KdTreeNode(p, null, null);
+        root = insert(p, root);
+    }
 
-        set.add(node.value);
+    private KdTreeNode insert(Point2D p, KdTreeNode curr) {
+        if (curr == null)
+            return new KdTreeNode(p, null, null);
+
     }
 
     public boolean contains(Point2D p) { // does the set contain point p?
         if (p == null)
             throw new IllegalArgumentException();
 
-        return set.contains(p);
+        return contains(p, root, true);
+    }
+
+    private boolean contains(Point2D p, KdTreeNode curr, boolean useX) {
+        if (curr == null)
+            return false;
+        
+        if (curr.value == p)
+            return true;
+
+        var nextNode = (useX ? p.x() < curr.value.x() : p.y() < curr.value.y())
+           ? curr.left : curr.right;           
+
+        return contains(p, nextNode, !useX);
     }
 
     public void draw() { // draw all points to standard draw
-        for (var point : set) {
-            point.draw();
-        }
+        draw(root);
+    }
+
+    private void draw(KdTreeNode curr) {
+        if (curr == null)
+            return;
+        
+        curr.value.draw();
+        draw(curr.left);
+        draw(curr.right);
     }
 
     public Iterable<Point2D> range(RectHV rect) { // all points that are inside the rectangle (or on the boundary)
