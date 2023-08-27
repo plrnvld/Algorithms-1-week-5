@@ -1,8 +1,10 @@
+import java.io.File;
 import java.util.LinkedList;
 
+import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.RectHV;
-import edu.princeton.cs.algs4.SET;
+import edu.princeton.cs.algs4.StdOut;
 
 public class KdTree {
     private KdTreeNode root;
@@ -17,6 +19,16 @@ public class KdTree {
             this.value = value;
             this.left = left;
             this.right = right;
+        }
+    }
+
+    private class NearestResult {
+        Point2D p;
+        double dSquared;
+
+        NearestResult(Point2D p, double dSquared) {
+            this.p = p;
+            this.dSquared = dSquared;
         }
     }
 
@@ -41,8 +53,13 @@ public class KdTree {
     }
 
     private KdTreeNode insert(Point2D p, KdTreeNode curr, boolean useX) {
-        if (curr == null)
+        if (curr == null) {
+            size++;
             return new KdTreeNode(p, null, null);
+        }
+
+        if (curr.value.equals(p)) 
+            return curr;
 
         var newLeft = curr.left;
         var newRight = curr.right;
@@ -70,9 +87,7 @@ public class KdTree {
         if (curr == null)
             return false;
 
-        // ############################### Continue here
-
-        if (curr.value == p)
+        if (curr.value.equals(p))
             return true;
 
         var nextNode = less(p, curr.value, useX) ? curr.left : curr.right;
@@ -89,6 +104,7 @@ public class KdTree {
             return;
 
         curr.value.draw();
+
         draw(curr.left);
         draw(curr.right);
     }
@@ -99,33 +115,85 @@ public class KdTree {
 
         var list = new LinkedList<Point2D>();
 
-        for (var point : set) {
-            if (rect.contains(point)) {
-                list.add(point);
-            }
-        }
+        range(rect, root, list);
 
         return list;
+    }
+
+    private void range(RectHV rect, KdTreeNode curr, LinkedList<Point2D> list) {
+        if (curr == null)
+            return;
+
+        if (rect.contains(curr.value))
+            list.add(curr.value);
+
+        range(rect, curr.left, list);
+        range(rect, curr.right, list);
     }
 
     public Point2D nearest(Point2D p) { // a nearest neighbor in the set to point p; null if the set is empty
         if (p == null)
             throw new IllegalArgumentException();
 
-        var minDist = Double.MAX_VALUE;
-        Point2D champion = null;
+        var result = nearest(p, root);
 
-        for (var point : set) {
-            var dist = p.distanceTo(point);
-            if (dist < minDist) {
-                minDist = dist;
-                champion = point;
-            }
+        return result.p;
+    }
+
+    private NearestResult nearest(Point2D p, KdTreeNode curr) {
+        if (curr == null)
+            return new NearestResult(null, Double.MAX_VALUE);
+
+        var currSquared = curr.value.distanceSquaredTo(p);
+
+        var nearLeft = nearest(p, curr.left);
+        var nearRight = nearest(p, curr.right);
+
+        // StdOut.println("Checking: " + curr.value + " with d^2 = " + currSquared);
+        // StdOut.println("    Left: " + nearLeft.p + " with d^2 = " + nearLeft.dSquared);
+        // StdOut.println("    Right: " + nearRight.p + " with d^2 = " + nearRight.dSquared);
+
+        if (currSquared <= nearLeft.dSquared && currSquared <= nearRight.dSquared) {
+            // StdOut.println("=== " + curr.value + "/" + nearLeft.p + "/" + nearRight.p  +   " ===> " + curr.value + " wins!");
+            return new NearestResult(curr.value, currSquared);
         }
-
-        return champion;
+        else if (nearLeft.dSquared <= currSquared && nearLeft.dSquared <= nearRight.dSquared) {
+            // StdOut.println("=== " + curr.value + "/" + nearLeft.p + "/" + nearRight.p  +   " ===> " + nearLeft.p + " wins!");
+            return nearLeft;
+        }
+        else if (nearRight.dSquared <= currSquared && nearRight.dSquared <= nearLeft.dSquared) {
+            // StdOut.println("=== " + curr.value + "/" + nearLeft.p + "/" + nearRight.p  +   " ===> " + nearRight.p + " wins!");
+            return nearRight;
+        }
+        else {
+            // StdOut.println("  currSquared <= nearLeft.dSquared " +  (currSquared <= nearLeft.dSquared));
+            // StdOut.println("  currSquared <= nearRight.dSquared " +  (currSquared <= nearRight.dSquared));
+            throw new RuntimeException("Argh!");
+        }
     }
 
     public static void main(String[] args) { // unit testing of the methods (optional)
+// create initial board from file
+        var defaultFile = "input10.txt";
+
+        In in = new In(new File(defaultFile));
+
+        var tree = new KdTree();
+
+        var lines = in.readAllLines();
+        for (var line : lines) {
+            var nums = line.split("\\s+");
+            var point = new Point2D(Double.parseDouble(nums[0]), Double.parseDouble(nums[1]));
+            tree.insert(point);
+        }
+
+        var target = new Point2D(0.25, 0.4375);
+
+        StdOut.println("Size = " + tree.size());
+
+
+        var nearest = tree.nearest(target);
+        
+        StdOut.println(nearest);
     }
 }

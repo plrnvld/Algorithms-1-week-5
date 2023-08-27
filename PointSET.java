@@ -58,11 +58,11 @@ public class PointSET {
         if (p == null)
             throw new IllegalArgumentException();
 
-        var minDist = Double.MAX_VALUE;
+        var minDist = Double.POSITIVE_INFINITY;
         Point2D champion = null;
 
         for (var point : set) {
-            var dist = p.distanceTo(point);
+            var dist = p.distanceSquaredTo(point);
             if (dist < minDist) {
                 minDist = dist;
                 champion = point;
