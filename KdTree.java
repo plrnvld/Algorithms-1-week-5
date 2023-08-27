@@ -37,13 +37,26 @@ public class KdTree {
         if (p == null)
             throw new IllegalArgumentException();
 
-        root = insert(p, root);
+        root = insert(p, root, true);
     }
 
-    private KdTreeNode insert(Point2D p, KdTreeNode curr) {
+    private KdTreeNode insert(Point2D p, KdTreeNode curr, boolean useX) {
         if (curr == null)
             return new KdTreeNode(p, null, null);
 
+        var newLeft = curr.left;
+        var newRight = curr.right;
+
+        if (less(p, curr.value, useX))
+            newLeft = insert(p, curr.left, !useX);
+        else
+            newRight = insert(p, curr.right, !useX);
+
+        return new KdTreeNode(curr.value, newLeft, newRight);
+    }
+
+    private boolean less(Point2D newPoint, Point2D nodePoint, boolean useX) {
+        return useX ? newPoint.x() < nodePoint.x() : newPoint.y() < nodePoint.y();
     }
 
     public boolean contains(Point2D p) { // does the set contain point p?
@@ -56,12 +69,13 @@ public class KdTree {
     private boolean contains(Point2D p, KdTreeNode curr, boolean useX) {
         if (curr == null)
             return false;
-        
+
+        // ############################### Continue here
+
         if (curr.value == p)
             return true;
 
-        var nextNode = (useX ? p.x() < curr.value.x() : p.y() < curr.value.y())
-           ? curr.left : curr.right;           
+        var nextNode = less(p, curr.value, useX) ? curr.left : curr.right;
 
         return contains(p, nextNode, !useX);
     }
@@ -73,7 +87,7 @@ public class KdTree {
     private void draw(KdTreeNode curr) {
         if (curr == null)
             return;
-        
+
         curr.value.draw();
         draw(curr.left);
         draw(curr.right);
