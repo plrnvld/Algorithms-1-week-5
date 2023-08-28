@@ -59,7 +59,7 @@ public class KdTree {
             return new KdTreeNode(p, null, null);
         }
 
-        if (curr.value.equals(p)) 
+        if (curr.value.equals(p))
             return curr;
 
         var newLeft = curr.left;
@@ -137,14 +137,14 @@ public class KdTree {
 
     private boolean checkLeft(RectHV rect, Point2D currPoint, boolean useX) {
         return useX
-            ? rect.xmin() <= currPoint.x()
-            : rect.ymin() <= currPoint.y();
+                ? rect.xmin() <= currPoint.x()
+                : rect.ymin() <= currPoint.y();
     }
 
     private boolean checkRight(RectHV rect, Point2D currPoint, boolean useX) {
         return useX
-            ? rect.xmax() >= currPoint.x()
-            : rect.ymax() >= currPoint.y();
+                ? rect.xmax() >= currPoint.x()
+                : rect.ymax() >= currPoint.y();
     }
 
     public Point2D nearest(Point2D p) { // a nearest neighbor in the set to point p; null if the set is empty
@@ -160,17 +160,47 @@ public class KdTree {
         if (curr == null)
             return new NearestResult(null, Double.POSITIVE_INFINITY);
 
-        var calculations = new LinkedList<NearestResult>();
+        var bestResult = new NearestResult(curr.value, curr.value.distanceSquaredTo(p));
 
-        var nearCurr = new NearestResult(curr.value, curr.value.distanceSquaredTo(p));
-        var nearLeft = nearest(p, curr.left, !useX);
-        var nearRight = nearest(p, curr.right, !useX);
+        var leftFirst = useX
+                ? curr.value.x() >= p.x()
+                : curr.value.y() >= p.y();
 
-        calculations.add(nearCurr);
-        calculations.add(nearLeft);
-        calculations.add(nearRight);
+        var checkFirst = leftFirst ? curr.left : curr.right;
+        var checkLast = leftFirst ? curr.right : curr.left;
 
-        return Collections.min(calculations, (x, y) -> compareDistances(x, y));
+        var firstChildResult = nearest(p, checkFirst, !useX);
+        if (isBetter(firstChildResult.dSquared, bestResult.dSquared))
+            bestResult = firstChildResult;
+
+        if (canBeatBest(p, curr.value, bestResult.dSquared, useX)) {
+
+            var lastChildResult = nearest(p, checkLast, !useX);
+            if (isBetter(lastChildResult.dSquared, bestResult.dSquared))
+                bestResult = lastChildResult;
+        }
+
+        return bestResult;
+    }
+
+    private boolean canBeatBest(Point2D target, Point2D curr, double currentBest, boolean useX) {
+        var diff = useX ? curr.x() - target.x() : curr.y() - target.y();
+        var newMinDistSquared = diff * diff;
+
+        if (Double.isInfinite(currentBest))
+            return true;
+
+        return newMinDistSquared < currentBest;
+    }
+
+    private boolean isBetter(double distNew, double distPrev) {
+        if (Double.isInfinite(distNew) && Double.isInfinite(distPrev))
+            return false;
+
+        if (Double.isInfinite(distPrev))
+            return true;
+
+        return distNew < distPrev;
     }
 
     private int compareDistances(NearestResult res1, NearestResult res2) {
@@ -178,7 +208,7 @@ public class KdTree {
         var dist2 = res2.dSquared;
         if (Double.isInfinite(dist1) && Double.isInfinite(dist2))
             return 0;
-        
+
         if (dist1 < dist2)
             return -1;
         if (dist1 > dist2)
@@ -188,8 +218,8 @@ public class KdTree {
     }
 
     public static void main(String[] args) { // unit testing of the methods (optional)
-// create initial board from file
-        var defaultFile = "input10.txt";
+        // create initial board from file
+        var defaultFile = "input5.txt";
 
         In in = new In(new File(defaultFile));
 
@@ -202,13 +232,12 @@ public class KdTree {
             tree.insert(point);
         }
 
-        var target = new Point2D(0.25, 0.4375);
+        var target = new Point2D(0.5, 0.954);
 
         StdOut.println("Size = " + tree.size());
 
-
         var nearest = tree.nearest(target);
-        
+
         StdOut.println(nearest);
     }
 }
