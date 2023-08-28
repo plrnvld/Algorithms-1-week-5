@@ -115,20 +115,35 @@ public class KdTree {
 
         var list = new LinkedList<Point2D>();
 
-        range(rect, root, list);
+        range(rect, root, list, true);
 
         return list;
     }
 
-    private void range(RectHV rect, KdTreeNode curr, LinkedList<Point2D> list) {
+    private void range(RectHV rect, KdTreeNode curr, LinkedList<Point2D> list, boolean useX) {
         if (curr == null)
             return;
 
         if (rect.contains(curr.value))
             list.add(curr.value);
 
-        range(rect, curr.left, list);
-        range(rect, curr.right, list);
+        if (checkLeft(rect, curr.value, useX))
+            range(rect, curr.left, list, !useX);
+
+        if (checkRight(rect, curr.value, useX))
+            range(rect, curr.right, list, !useX);
+    }
+
+    private boolean checkLeft(RectHV rect, Point2D currPoint, boolean useX) {
+        return useX
+            ? rect.xmin() <= currPoint.x()
+            : rect.ymin() <= currPoint.y();
+    }
+
+    private boolean checkRight(RectHV rect, Point2D currPoint, boolean useX) {
+        return useX
+            ? rect.xmax() >= currPoint.x()
+            : rect.ymax() >= currPoint.y();
     }
 
     public Point2D nearest(Point2D p) { // a nearest neighbor in the set to point p; null if the set is empty
@@ -142,32 +157,23 @@ public class KdTree {
 
     private NearestResult nearest(Point2D p, KdTreeNode curr) {
         if (curr == null)
-            return new NearestResult(null, Double.MAX_VALUE);
+            return new NearestResult(null, Double.POSITIVE_INFINITY);
 
         var currSquared = curr.value.distanceSquaredTo(p);
 
         var nearLeft = nearest(p, curr.left);
         var nearRight = nearest(p, curr.right);
 
-        // StdOut.println("Checking: " + curr.value + " with d^2 = " + currSquared);
-        // StdOut.println("    Left: " + nearLeft.p + " with d^2 = " + nearLeft.dSquared);
-        // StdOut.println("    Right: " + nearRight.p + " with d^2 = " + nearRight.dSquared);
-
         if (currSquared <= nearLeft.dSquared && currSquared <= nearRight.dSquared) {
-            // StdOut.println("=== " + curr.value + "/" + nearLeft.p + "/" + nearRight.p  +   " ===> " + curr.value + " wins!");
             return new NearestResult(curr.value, currSquared);
         }
         else if (nearLeft.dSquared <= currSquared && nearLeft.dSquared <= nearRight.dSquared) {
-            // StdOut.println("=== " + curr.value + "/" + nearLeft.p + "/" + nearRight.p  +   " ===> " + nearLeft.p + " wins!");
             return nearLeft;
         }
         else if (nearRight.dSquared <= currSquared && nearRight.dSquared <= nearLeft.dSquared) {
-            // StdOut.println("=== " + curr.value + "/" + nearLeft.p + "/" + nearRight.p  +   " ===> " + nearRight.p + " wins!");
             return nearRight;
         }
         else {
-            // StdOut.println("  currSquared <= nearLeft.dSquared " +  (currSquared <= nearLeft.dSquared));
-            // StdOut.println("  currSquared <= nearRight.dSquared " +  (currSquared <= nearRight.dSquared));
             throw new RuntimeException("Argh!");
         }
     }
