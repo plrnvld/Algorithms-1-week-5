@@ -1,4 +1,5 @@
 import java.io.File;
+import java.util.Collections;
 import java.util.LinkedList;
 
 import edu.princeton.cs.algs4.In;
@@ -150,32 +151,40 @@ public class KdTree {
         if (p == null)
             throw new IllegalArgumentException();
 
-        var result = nearest(p, root);
+        var result = nearest(p, root, true);
 
         return result.p;
     }
 
-    private NearestResult nearest(Point2D p, KdTreeNode curr) {
+    private NearestResult nearest(Point2D p, KdTreeNode curr, boolean useX) {
         if (curr == null)
             return new NearestResult(null, Double.POSITIVE_INFINITY);
 
-        var currSquared = curr.value.distanceSquaredTo(p);
+        var calculations = new LinkedList<NearestResult>();
 
-        var nearLeft = nearest(p, curr.left);
-        var nearRight = nearest(p, curr.right);
+        var nearCurr = new NearestResult(curr.value, curr.value.distanceSquaredTo(p));
+        var nearLeft = nearest(p, curr.left, !useX);
+        var nearRight = nearest(p, curr.right, !useX);
 
-        if (currSquared <= nearLeft.dSquared && currSquared <= nearRight.dSquared) {
-            return new NearestResult(curr.value, currSquared);
-        }
-        else if (nearLeft.dSquared <= currSquared && nearLeft.dSquared <= nearRight.dSquared) {
-            return nearLeft;
-        }
-        else if (nearRight.dSquared <= currSquared && nearRight.dSquared <= nearLeft.dSquared) {
-            return nearRight;
-        }
-        else {
-            throw new RuntimeException("Argh!");
-        }
+        calculations.add(nearCurr);
+        calculations.add(nearLeft);
+        calculations.add(nearRight);
+
+        return Collections.min(calculations, (x, y) -> compareDistances(x, y));
+    }
+
+    private int compareDistances(NearestResult res1, NearestResult res2) {
+        var dist1 = res1.dSquared;
+        var dist2 = res2.dSquared;
+        if (Double.isInfinite(dist1) && Double.isInfinite(dist2))
+            return 0;
+        
+        if (dist1 < dist2)
+            return -1;
+        if (dist1 > dist2)
+            return 1;
+
+        return 0;
     }
 
     public static void main(String[] args) { // unit testing of the methods (optional)
