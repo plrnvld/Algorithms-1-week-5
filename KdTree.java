@@ -1,5 +1,4 @@
 import java.io.File;
-import java.util.Collections;
 import java.util.LinkedList;
 
 import edu.princeton.cs.algs4.In;
@@ -163,8 +162,8 @@ public class KdTree {
         var bestResult = new NearestResult(curr.value, curr.value.distanceSquaredTo(p));
 
         var leftFirst = useX
-                ? curr.value.x() >= p.x()
-                : curr.value.y() >= p.y();
+                ? curr.value.x() > p.x()
+                : curr.value.y() > p.y();
 
         var checkFirst = leftFirst ? curr.left : curr.right;
         var checkLast = leftFirst ? curr.right : curr.left;
@@ -201,20 +200,6 @@ public class KdTree {
             return true;
 
         return distNew < distPrev;
-    }
-
-    private int compareDistances(NearestResult res1, NearestResult res2) {
-        var dist1 = res1.dSquared;
-        var dist2 = res2.dSquared;
-        if (Double.isInfinite(dist1) && Double.isInfinite(dist2))
-            return 0;
-
-        if (dist1 < dist2)
-            return -1;
-        if (dist1 > dist2)
-            return 1;
-
-        return 0;
     }
 
     public static void main(String[] args) { // unit testing of the methods (optional)
